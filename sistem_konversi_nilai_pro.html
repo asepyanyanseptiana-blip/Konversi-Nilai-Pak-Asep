@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Konversi Nilai Pro - SDN Margaasih</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Data Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        @media print {
+            body { background: white; color: black; }
+            .no-print { display: none !important; }
+            .print-card { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
+            .print-break-inside-avoid { page-break-inside: avoid; }
+        }
+        /* Custom scrollbar for modern browsers */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-blue-500 selection:text-white">
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none no-print"></div>
+
+    <!-- HEADER / BRANDING -->
+    <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 text-white shadow-lg no-print relative overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_107%,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_45%)]"></div>
+        <div class="max-w-7xl mx-auto px-6 py-8 relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/10 p-3 rounded-2xl backdrop-blur-md border border-white/20">
+                    <i data-lucide="graduation-cap" class="w-8 h-8 text-blue-200"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">SISTEM KONVERSI NILAI MANDIRI</h1>
+                    <p class="text-sm md:text-base text-blue-100 mt-1 font-medium flex items-center gap-2 flex-wrap">
+                        <span>Oleh: <strong class="text-white font-semibold">Asep Yanyan Septiana, S.Pd.</strong></span>
+                        <span class="text-white/40 hidden md:inline">|</span>
+                        <span class="bg-white/15 px-2.5 py-0.5 rounded-full text-xs font-semibold">SD Negeri Margaasih</span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 text-xs bg-black/20 self-start md:self-auto px-3.5 py-2 rounded-xl border border-white/10">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-semibold text-slate-200">Tahun Ajaran 2025/2026</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 flex-grow">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT PANEL: CONFIGURATION & INPUT (col-span-5) -->
+            <div class="lg:col-span-5 space-y-6 no-print">
+                
+                <!-- 1. Configuration Panel -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                    <h2 class="text-md font-bold text-slate-800 border-b pb-3 flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-5 h-5 text-blue-600"></i>
+                        Pengaturan Metode Katrol
+                    </h2>
+                    
+                    <!-- Method Selector -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Pilih Metode Konversi</label>
+                        <select id="metodeKonversi" onchange="toggleMetodeFields(); updateMethodFormula();" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150">
+                            <option value="minmax" selected>Min-Max Normalisasi (Saran)</option>
+                            <option value="kkm">KKM / KKTP Anchor (Proporsional)</option>
+                            <option value="zscore">Z-Score Dinamis (Distribusi Normal)</option>
+                        </select>
+                    </div>
+
+                    <!-- Dynamic Input Fields based on Method Selection -->
+                    <div id="fieldMinMax" class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Target Minimum</label>
+                            <input type="number" id="targetMin" value="70" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white focus:outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Target Maksimum</label>
+                            <input type="number" id="targetMax" value="95" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white focus:outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <div id="fieldKKM" class="grid grid-cols-2 gap-4 hidden">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">KKM / KKTP Asli</label>
+                            <input type="number" id="kkmAsli" value="60" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white focus:outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">KKM / KKTP Target</label>
+                            <input type="number" id="kkmTarget" value="75" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white focus:outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <div id="fieldZScore" class="grid grid-cols-2 gap-4 hidden">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Target Mean (Rata-rata)</label>
+                            <input type="number" id="zMean" value="78" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white focus:outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Target Std. Deviasi</label>
+                            <input type="number" id="zStd" value="7.5" step="0.1" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white focus:outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <!-- Advanced Settings Toggle -->
+                    <div class="border-t border-slate-100 pt-3">
+                        <button onclick="toggleAdvancedSettings()" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 focus:outline-none">
+                            <i data-lucide="chevron-down" id="advancedIcon" class="w-4 h-4 transition-transform"></i>
+                            Tampilkan Pengaturan Lanjutan
+                        </button>
+                        
+                        <div id="advancedSettings" class="mt-3 grid grid-cols-2 gap-4 hidden animate-fadeIn">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pembulatan Nilai</label>
+                                <select id="roundingRule" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="round" selected>Terdekat (Math.round)</option>
+                                    <option value="ceil">Ke Atas / Atap (Math.ceil)</option>
+                                    <option value="floor">Ke Bawah / Lantai (Math.floor)</option>
+                                    <option value="decimal">1 Angka Belakang Koma</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">KKM Lulus Visual</label>
+                                <input type="number" id="kkmLulusVisual" value="75" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white focus:outline-none transition-all">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Data Entry Options Card -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                    <div class="flex items-center justify-between border-b pb-3">
+                        <h2 class="text-md font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i>
+                            Input Data Siswa
+                        </h2>
+                        <div class="flex bg-slate-100 p-1 rounded-lg text-xs">
+                            <button id="tabExcel" onclick="switchInputTab('excel')" class="px-3 py-1.5 rounded-md font-semibold text-blue-600 bg-white shadow-sm transition">
+                                Paste Excel
+                            </button>
+                            <button id="tabManual" onclick="switchInputTab('manual')" class="px-3 py-1.5 rounded-md font-semibold text-slate-500 hover:text-slate-700 transition">
+                                Input Manual
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- EXCEL TEXTAREA INPUT -->
+                    <div id="inputExcelContainer" class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Metode Copy-Paste Excel</span>
+                            <button onclick="insertSampleData()" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Masukkan Contoh Data
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-500 leading-relaxed bg-blue-50/50 p-2.5 rounded-lg border border-blue-100/50">
+                            <strong>💡 Tips:</strong> Di Microsoft Excel / Google Sheets, blok dan copy (Ctrl+C) kolom <strong>Nama Siswa</strong> dan <strong>Nilai</strong>, lalu langsung paste (Ctrl+V) ke dalam box di bawah.
+                        </p>
+                        <textarea id="excelData" rows="8" placeholder="Contoh:&#10;Aditya Pratama&#9;55&#10;Budi Santoso&#9;62&#10;Citra Lestari&#9;80" class="w-full p-4 text-xs font-mono border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 placeholder-slate-400"></textarea>
+                    </div>
+
+                    <!-- MANUAL INTERACTIVE TABLE INPUT -->
+                    <div id="inputManualContainer" class="space-y-3 hidden">
+                        <div class="max-h-60 overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-100 bg-slate-50/50">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-slate-100 sticky top-0">
+                                    <tr>
+                                        <th class="p-2.5 font-bold text-slate-500 uppercase tracking-wider">Nama Siswa</th>
+                                        <th class="p-2.5 font-bold text-slate-500 uppercase tracking-wider w-24">Nilai Asli</th>
+                                        <th class="p-2.5 w-12 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="manualTableBody" class="divide-y divide-slate-100">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="manualName" placeholder="Nama Baru..." class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <input type="number" id="manualScore" placeholder="Nilai..." class="w-24 px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <button onclick="addManualRow()" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-xl transition duration-150 flex items-center justify-center shrink-0">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- RUN BUTTON -->
+                    <button onclick="prosesKonversi()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 text-sm tracking-wide">
+                        <i data-lucide="play-circle" class="w-5 h-5"></i>
+                        PROSES DAN ANALISIS NILAI
+                    </button>
+                </div>
+
+                <!-- 3. Formula Explanation Card -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Rumus Matematika Terpakai:</h3>
+                    <div id="formulaExplainer" class="bg-slate-50 p-4 rounded-xl text-xs text-slate-600 font-mono space-y-2 overflow-x-auto leading-relaxed border border-slate-100">
+                        <!-- Will be dynamically filled -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT PANEL: DASHBOARD & RESULTS (col-span-7) -->
+            <div class="lg:col-span-7 bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100 print-card relative">
+                
+                <!-- Print Header & Watermark (Only visible when printing) -->
+                <div class="hidden print:block text-center border-b-4 border-double border-slate-900 pb-4 mb-6">
+                    <div class="relative">
+                        <h2 class="text-xl font-extrabold tracking-wide text-slate-900 uppercase">Laporan Hasil Konversi Nilai Siswa</h2>
+                        <h3 class="text-lg font-bold text-slate-800 tracking-wide uppercase mt-1">SD Negeri Margaasih</h3>
+                        <p class="text-xs text-slate-600 mt-1">
+                            Alamat: Kec. Margaasih, Kab. Bandung, Jawa Barat | Guru Kelas: Asep Yanyan Septiana, S.Pd.
+                        </p>
+                        <div class="text-[10px] text-slate-500 mt-1 flex justify-center gap-4 font-mono">
+                            <span>Metode: <strong id="printMetode" class="text-slate-800">Min-Max Normalization</strong></span>
+                            <span>Tanggal Cetak: <strong id="printDate" class="text-slate-800">-</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Actions & Controls -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 mb-6 border-b gap-4 no-print">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="bar-chart-3" class="w-5.5 h-5.5 text-blue-600"></i>
+                            Dashboard Hasil Konversi
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Analisis instan, grafik distribusi, & berkas cetak siap pakai.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportToExcel()" class="bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition border border-slate-200 shadow-sm cursor-pointer">
+                            <i data-lucide="download" class="w-4 h-4 text-emerald-600"></i>
+                            Export CSV
+                        </button>
+                        <button onclick="triggerPrint()" class="bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition border border-blue-200 cursor-pointer shadow-sm">
+                            <i data-lucide="printer" class="w-4 h-4"></i>
+                            Cetak PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Real-time Statistics Cards Grid -->
+                <div id="statsPlaceholder" class="text-center py-6 text-slate-400 text-sm italic bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                    Sistem siap memproses. Silakan masukkan data siswa dan klik tombol proses di sebelah kiri.
+                </div>
+
+                <div id="statsWidget" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 hidden print-break-inside-avoid">
+                    <div class="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-center flex flex-col justify-between">
+                        <span class="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Rata-rata Kelas</span>
+                        <div class="mt-2 flex items-baseline justify-center gap-1.5">
+                            <span id="statMean" class="text-xl font-extrabold text-blue-700">-</span>
+                            <span id="statMeanOld" class="text-xs text-slate-400 line-through">-</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-center flex flex-col justify-between">
+                        <span class="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Nilai Tertinggi</span>
+                        <div class="mt-2 flex items-baseline justify-center gap-1.5">
+                            <span id="statMax" class="text-xl font-extrabold text-indigo-700">-</span>
+                            <span id="statMaxOld" class="text-xs text-slate-400 line-through">-</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-center flex flex-col justify-between">
+                        <span class="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Nilai Terendah</span>
+                        <div class="mt-2 flex items-baseline justify-center gap-1.5">
+                            <span id="statMin" class="text-xl font-extrabold text-orange-600">-</span>
+                            <span id="statMinOld" class="text-xs text-slate-400 line-through">-</span>
+                        </div>
+                    </div>
+                    <div id="passingCard" class="bg-emerald-50 p-3.5 rounded-xl border border-emerald-100 text-center flex flex-col justify-between">
+                        <span class="block text-[10px] uppercase font-bold text-emerald-600 tracking-wider">Tingkat Lulus</span>
+                        <div class="mt-2 flex items-baseline justify-center gap-1.5">
+                            <span id="statPassRate" class="text-xl font-extrabold text-emerald-800">-</span>
+                            <span class="text-xs text-emerald-600">Lulus</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart Visualization Section -->
+                <div id="chartContainer" class="mb-8 border border-slate-100 p-4 rounded-2xl hidden no-print">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                        <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i>
+                        Grafik Perbandingan Sebaran Nilai (Sebelum vs Sesudah)
+                    </h3>
+                    <div class="h-64 relative">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Main Data Results Table -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center no-print">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Daftar Hasil Nilai Siswa</span>
+                        <!-- Table Filter Search -->
+                        <div id="tableSearchContainer" class="relative hidden">
+                            <input type="text" id="tableSearch" onkeyup="filterResultTable()" placeholder="Cari nama siswa..." class="pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs w-48 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 focus:bg-white transition-all">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto border border-slate-100 rounded-2xl">
+                        <table class="w-full text-left border-collapse" id="mainResultsTable">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100">
+                                    <th class="p-3 text-xs font-bold text-slate-400 uppercase tracking-wider w-12 text-center">No</th>
+                                    <th class="p-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Nama Lengkap Siswa</th>
+                                    <th class="p-3 text-xs font-bold text-slate-400 uppercase tracking-wider w-28 text-center cursor-pointer hover:bg-slate-100 transition no-print" onclick="sortResultTable(2)">
+                                        Nilai Asli <span id="sortAsliIcon"></span>
+                                    </th>
+                                    <!-- Print Only alternative for column header -->
+                                    <th class="p-3 text-xs font-bold text-slate-400 uppercase tracking-wider w-28 text-center hidden print:table-cell">
+                                        Nilai Asli
+                                    </th>
+                                    <th class="p-3 text-xs font-bold text-blue-800 bg-blue-50/50 uppercase tracking-wider w-32 text-center cursor-pointer hover:bg-blue-100 transition" onclick="sortResultTable(3)">
+                                        Nilai Baru <span id="sortBaruIcon"></span>
+                                    </th>
+                                    <th class="p-3 text-xs font-bold text-slate-400 uppercase tracking-wider w-28 text-center">Ket.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultBody" class="divide-y divide-slate-100 text-sm text-slate-600">
+                                <tr>
+                                    <td colspan="5" class="p-12 text-center text-slate-400 italic bg-slate-50/20">Belum ada data yang diproses. Silakan masukkan data di panel kiri.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Printable Validation Signature (Only visible when printing) -->
+                <div class="hidden print:block mt-12 print-break-inside-avoid">
+                    <div class="grid grid-cols-2 gap-12 text-center text-xs">
+                        <div>
+                            <p>Mengetahui,</p>
+                            <p class="font-bold">Kepala SD Negeri Margaasih</p>
+                            <div class="h-20"></div>
+                            <p class="font-bold underline">_________________________</p>
+                            <p class="text-slate-500">NIP. ..................................</p>
+                        </div>
+                        <div>
+                            <p>Margaasih, <span class="print-current-date">..........</span></p>
+                            <p class="font-bold">Guru Kelas,</p>
+                            <div class="h-20"></div>
+                            <p class="font-bold underline">Asep Yanyan Septiana, S.Pd.</p>
+                            <p class="text-slate-500">NIP. ..................................</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FOOTER / COPYRIGHT -->
+    <footer class="bg-slate-900 text-slate-400 py-6 text-center text-xs border-t border-slate-800 no-print">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <p>&copy; 2026 SDN Margaasih. Sistem Konversi Nilai Guru Mandiri.</p>
+            <p class="flex items-center justify-center gap-1.5 text-slate-300">
+                <span>Didesain khusus untuk</span>
+                <span class="font-semibold text-white">Pak Asep Yanyan Septiana, S.Pd.</span>
+            </p>
+        </div>
+    </footer>
+
+    <!-- LOGIKA UTAMA -->
+    <script>
+        // State variables
+        let currentInputMode = 'excel'; // 'excel' | 'manual'
+        let studentData = []; // Array of { id, nama, nilaiAsli, nilaiBaru, passed }
+        let chartInstance = null;
+        let currentSortColumn = -1; // -1 = none, 2 = asli, 3 = baru
+        let currentSortDirection = 'asc'; // 'asc' | 'desc'
+
+        // Sample Data
+        const sampleDataString = `Aulia Nurul Hikmah\t55\nBagas Satria Wijaya\t48\nCahya Lestari Ningrum\t65\nDewi Sartika Kusumawardhani\t72\nFajar Ramadhan\t80\nGuntur Pamungkas\t35\nHana Humaira\t92\nIrfan Ardiansyah\t60\nJulia Rahmawati\t45\nKiki Amelia\t70\nLukman Hakim\t88\nMega Utami\t58`;
+
+        // Initialize Icons & UI elements on page load
+        window.onload = function() {
+            lucide.createIcons();
+            updateMethodFormula();
+            toggleMetodeFields();
+            
+            // Build manual table with a placeholder row
+            addPlaceholderManualRow();
+        }
+
+        // Trigger safe print with dynamic system settings
+        function triggerPrint() {
+            if (studentData.length === 0) {
+                showToast("Silakan masukkan dan proses data terlebih dahulu sebelum mencetak!", "warning");
+                return;
+            }
+            
+            // Set Print Metadata
+            const today = new Date();
+            const formatOption = { year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedDate = today.toLocaleDateString('id-ID', formatOption);
+            
+            document.getElementById('printDate').innerText = formattedDate;
+            const printDates = document.querySelectorAll('.print-current-date');
+            printDates.forEach(el => el.innerText = formattedDate);
+            
+            const selectedMethodLabel = document.getElementById('metodeKonversi').options[document.getElementById('metodeKonversi').selectedIndex].text;
+            document.getElementById('printMetode').innerText = selectedMethodLabel;
+            
+            window.print();
+        }
+
+        // Custom Notification Toast Generator
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 p-4 rounded-xl shadow-lg border text-sm transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm w-full`;
+            
+            let bgClass = "bg-white border-slate-100 text-slate-800";
+            let iconMarkup = "";
+            
+            if (type === 'success') {
+                bgClass = "bg-emerald-50 border-emerald-100 text-emerald-900";
+                iconMarkup = `<i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>`;
+            } else if (type === 'warning') {
+                bgClass = "bg-amber-50 border-amber-100 text-amber-900";
+                iconMarkup = `<i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600"></i>`;
+            } else if (type === 'error') {
+                bgClass = "bg-rose-50 border-rose-100 text-rose-900";
+                iconMarkup = `<i data-lucide="x-circle" class="w-5 h-5 text-rose-600"></i>`;
+            } else {
+                bgClass = "bg-blue-50 border-blue-100 text-blue-900";
+                iconMarkup = `<i data-lucide="info" class="w-5 h-5 text-blue-600"></i>`;
+            }
+            
+            toast.className += " " + bgClass;
+            toast.innerHTML = `
+                ${iconMarkup}
+                <div class="flex-grow font-semibold">${message}</div>
+                <button class="text-slate-400 hover:text-slate-600 focus:outline-none" onclick="this.parentElement.remove()">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons({attrs: {class: ['shrink-0']}});
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+            
+            // Automatically clear toast after 4 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Toggle advanced settings accordion
+        function toggleAdvancedSettings() {
+            const settingsDiv = document.getElementById('advancedSettings');
+            const icon = document.getElementById('advancedIcon');
+            const isHidden = settingsDiv.classList.contains('hidden');
+            
+            settingsDiv.classList.toggle('hidden', !isHidden);
+            icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        // Insert sample data in Excel text area helper
+        function insertSampleData() {
+            document.getElementById('excelData').value = sampleDataString;
+            showToast("Contoh data berhasil dimasukkan ke form!", "success");
+        }
+
+        // Switch modes between Paste Excel and manual tables
+        function switchInputTab(mode) {
+            currentInputMode = mode;
+            
+            const btnExcel = document.getElementById('tabExcel');
+            const btnManual = document.getElementById('tabManual');
+            const containerExcel = document.getElementById('inputExcelContainer');
+            const containerManual = document.getElementById('inputManualContainer');
+            
+            if (mode === 'excel') {
+                btnExcel.className = "px-3 py-1.5 rounded-md font-semibold text-blue-600 bg-white shadow-sm transition";
+                btnManual.className = "px-3 py-1.5 rounded-md font-semibold text-slate-500 hover:text-slate-700 transition";
+                containerExcel.classList.remove('hidden');
+                containerManual.classList.add('hidden');
+            } else {
+                btnManual.className = "px-3 py-1.5 rounded-md font-semibold text-indigo-600 bg-white shadow-sm transition";
+                btnExcel.className = "px-3 py-1.5 rounded-md font-semibold text-slate-500 hover:text-slate-700 transition";
+                containerManual.classList.remove('hidden');
+                containerExcel.classList.add('hidden');
+            }
+        }
+
+        // Interactive Formula Description Engine (LaTeX layout)
+        function updateMethodFormula() {
+            const method = document.getElementById('metodeKonversi').value;
+            const container = document.getElementById('formulaExplainer');
+            
+            let desc = "";
+            if (method === 'minmax') {
+                desc = `
+                    <div class="font-bold text-slate-700 mb-1">Rumus Min-Max Normalisasi:</div>
+                    $x_{baru} = y_{min} + \\frac{x - x_{min}}{x_{maks} - x_{min}} \\times (y_{maks} - y_{min})$
+                    <div class="text-[10px] text-slate-400 mt-2">
+                        Dimana $x$ adalah nilai asli, $x_{min}$ & $x_{maks}$ nilai ekstrem kelas, sedangkan $y_{min}$ & $y_{maks}$ target rentang guru.
+                    </div>
+                `;
+            } else if (method === 'kkm') {
+                desc = `
+                    <div class="font-bold text-slate-700 mb-1">Rumus KKM Anchor (Proporsional):</div>
+                    Jika nilai asli $x \\ge KKM_{asli}$: <br>
+                    $x_{baru} = KKM_{target} + \\frac{x - KKM_{asli}}{x_{maks} - KKM_{asli}} \\times (100 - KKM_{target})$ <br>
+                    Jika nilai asli $x < KKM_{asli}$: <br>
+                    $x_{baru} = \\frac{x - x_{min}}{KKM_{asli} - x_{min}} \\times KKM_{target}$
+                    <div class="text-[10px] text-slate-400 mt-2">
+                        Metode proporsional dua arah untuk memisahkan distribusi siswa tuntas dan remidial secara adil.
+                    </div>
+                `;
+            } else if (method === 'zscore') {
+                desc = `
+                    <div class="font-bold text-slate-700 mb-1">Rumus Distribusi Normal (Z-Score):</div>
+                    $z = \\frac{x - \\mu}{\\sigma}$ <br>
+                    $x_{baru} = \\mu_{target} + (z \\times \\sigma_{target})$
+                    <div class="text-[10px] text-slate-400 mt-2">
+                        Dimana $\\mu$ adalah rata-rata asli kelas dan $\\sigma$ adalah standard deviasi sebaran asli kelas.
+                    </div>
+                `;
+            }
+            container.innerHTML = desc;
+        }
+
+        // Toggle UI options dynamically depending on selected method
+        function toggleMetodeFields() {
+            const metode = document.getElementById('metodeKonversi').value;
+            document.getElementById('fieldMinMax').classList.toggle('hidden', metode !== 'minmax');
+            document.getElementById('fieldKKM').classList.toggle('hidden', metode !== 'kkm');
+            document.getElementById('fieldZScore').classList.toggle('hidden', metode !== 'zscore');
+        }
+
+        // Add a placeholder manual row for visual help
+        function addPlaceholderManualRow() {
+            const tableBody = document.getElementById('manualTableBody');
+            tableBody.innerHTML = '';
+            
+            const initialSamples = [
+                { nama: "Alif Raharjo", nilai: 45 },
+                { nama: "Siti Maryam", nilai: 70 },
+                { nama: "Sandi Pratama", nilai: 60 }
+            ];
+            
+            initialSamples.forEach(item => {
+                const rowId = crypto.randomUUID();
+                const tr = document.createElement('tr');
+                tr.id = `row-${rowId}`;
+                tr.className = "hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="p-2"><input type="text" value="${item.nama}" class="manual-name-input w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-blue-500 focus:bg-white px-1.5 py-0.5 focus:outline-none transition"></td>
+                    <td class="p-2"><input type="number" value="${item.nilai}" class="manual-score-input w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-blue-500 focus:bg-white px-1.5 py-0.5 focus:outline-none transition"></td>
+                    <td class="p-2 text-center"><button onclick="deleteManualRow('${rowId}')" class="text-rose-500 hover:text-rose-700 transition"><i data-lucide="trash-2" class="w-4 h-4 mx-auto"></i></button></td>
+                `;
+                tableBody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        // Delete row in manual grid
+        function deleteManualRow(id) {
+            const row = document.getElementById(`row-${id}`);
+            if (row) {
+                row.remove();
+                showToast("Satu baris siswa dihapus.", "info");
+            }
+        }
+
+        // Add row inside manual entry grid
+        function addManualRow() {
+            const nameInput = document.getElementById('manualName');
+            const scoreInput = document.getElementById('manualScore');
+            const name = nameInput.value.trim();
+            const score = parseFloat(scoreInput.value);
+            
+            if (!name || isNaN(score)) {
+                showToast("Lengkapi nama dan nilai asli siswa terlebih dahulu!", "warning");
+                return;
+            }
+            
+            const tableBody = document.getElementById('manualTableBody');
+            const rowId = crypto.randomUUID();
+            
+            const tr = document.createElement('tr');
+            tr.id = `row-${rowId}`;
+            tr.className = "hover:bg-slate-50";
+            tr.innerHTML = `
+                <td class="p-2"><input type="text" value="${name}" class="manual-name-input w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-blue-500 focus:bg-white px-1.5 py-0.5 focus:outline-none transition"></td>
+                <td class="p-2"><input type="number" value="${score}" class="manual-score-input w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-blue-500 focus:bg-white px-1.5 py-0.5 focus:outline-none transition"></td>
+                <td class="p-2 text-center"><button onclick="deleteManualRow('${rowId}')" class="text-rose-500 hover:text-rose-700 transition"><i data-lucide="trash-2" class="w-4 h-4 mx-auto"></i></button></td>
+            `;
+            tableBody.appendChild(tr);
+            lucide.createIcons();
+            
+            nameInput.value = '';
+            scoreInput.value = '';
+            nameInput.focus();
+            showToast(`Siswa "${name}" ditambahkan.`, "success");
+        }
+
+        // Extract raw inputs depending on the selected active tab
+        function extractInputs() {
+            let extracted = [];
+            
+            if (currentInputMode === 'excel') {
+                const raw = document.getElementById('excelData').value.trim();
+                if (!raw) return [];
+                
+                const lines = raw.split('\n');
+                lines.forEach((line, index) => {
+                    const cols = line.split('\t');
+                    if (cols.length >= 2) {
+                        const nama = cols[0].trim();
+                        const valString = cols[1].replace(/\s/g, '').replace(',', '.');
+                        const nilai = parseFloat(valString);
+                        
+                        if (nama && !isNaN(nilai)) {
+                            extracted.push({ id: `ex-${index}`, nama, nilaiAsli: nilai });
+                        }
+                    } else if (cols.length === 1 && cols[0].trim() !== "") {
+                        // Maybe comma or semicolon delimited?
+                        const commaSplit = line.split(/[,;]/);
+                        if (commaSplit.length >= 2) {
+                            const nama = commaSplit[0].trim();
+                            const valString = commaSplit[1].replace(/\s/g, '').replace(',', '.');
+                            const nilai = parseFloat(valString);
+                            if (nama && !isNaN(nilai)) {
+                                extracted.push({ id: `ex-${index}`, nama, nilaiAsli: nilai });
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Read from manual table
+                const rows = document.querySelectorAll('#manualTableBody tr');
+                rows.forEach((row, index) => {
+                    const nameVal = row.querySelector('.manual-name-input').value.trim();
+                    const scoreVal = parseFloat(row.querySelector('.manual-score-input').value);
+                    if (nameVal && !isNaN(scoreVal)) {
+                        extracted.push({ id: `man-${index}`, nama: nameVal, nilaiAsli: scoreVal });
+                    }
+                });
+            }
+            return extracted;
+        }
+
+        // Core Mathematical Processing Engine
+        function prosesKonversi() {
+            const inputs = extractInputs();
+            if (inputs.length === 0) {
+                showToast("Sistem tidak mendeteksi data siswa yang valid! Silakan periksa kembali input Anda.", "error");
+                return;
+            }
+
+            const metode = document.getElementById('metodeKonversi').value;
+            const rounding = document.getElementById('roundingRule').value;
+            const kkmVisual = parseFloat(document.getElementById('kkmLulusVisual').value) || 75;
+
+            // Base Math variables
+            const nilaiAsliArray = inputs.map(i => i.nilaiAsli);
+            const minAsli = Math.min(...nilaiAsliArray);
+            const maxAsli = Math.max(...nilaiAsliArray);
+            const sumAsli = nilaiAsliArray.reduce((acc, curr) => acc + curr, 0);
+            const meanAsli = sumAsli / inputs.length;
+
+            // Variance and Standard Deviation
+            const variance = nilaiAsliArray.reduce((acc, curr) => acc + Math.pow(curr - meanAsli, 2), 0) / inputs.length;
+            const stdDev = Math.sqrt(variance) || 1;
+
+            studentData = [];
+            let totalNilaiBaru = 0;
+
+            // Loop Calculation Engine
+            inputs.forEach(siswa => {
+                let nilaiBaru = 0;
+                
+                if (metode === 'minmax') {
+                    const targetMin = parseFloat(document.getElementById('targetMin').value) || 70;
+                    const targetMax = parseFloat(document.getElementById('targetMax').value) || 95;
+                    
+                    if (maxAsli !== minAsli) {
+                        nilaiBaru = targetMin + ((siswa.nilaiAsli - minAsli) / (maxAsli - minAsli)) * (targetMax - targetMin);
+                    } else {
+                        nilaiBaru = targetMin; // uniform data falls back to target min
+                    }
+                } 
+                else if (metode === 'kkm') {
+                    const kkmAsli = parseFloat(document.getElementById('kkmAsli').value) || 60;
+                    const kkmTarget = parseFloat(document.getElementById('kkmTarget').value) || 75;
+                    
+                    if (siswa.nilaiAsli >= kkmAsli) {
+                        if (maxAsli !== kkmAsli) {
+                            nilaiBaru = kkmTarget + ((siswa.nilaiAsli - kkmAsli) / (maxAsli - kkmAsli)) * (100 - kkmTarget);
+                        } else {
+                            nilaiBaru = kkmTarget;
+                        }
+                    } else {
+                        if (kkmAsli !== minAsli) {
+                            nilaiBaru = minAsli + ((siswa.nilaiAsli - minAsli) / (kkmAsli - minAsli)) * (kkmTarget - minAsli);
+                        } else {
+                            nilaiBaru = kkmTarget;
+                        }
+                    }
+                } 
+                else if (metode === 'zscore') {
+                    const targetMean = parseFloat(document.getElementById('zMean').value) || 78;
+                    const targetStd = parseFloat(document.getElementById('zStd').value) || 7.5;
+                    
+                    const z = (siswa.nilaiAsli - meanAsli) / stdDev;
+                    nilaiBaru = targetMean + (z * targetStd);
+                }
+
+                // Keep bounds within school strict ranges [0 - 100]
+                nilaiBaru = Math.min(100, Math.max(0, nilaiBaru));
+                
+                // Formulate rounding
+                let finalScore = nilaiBaru;
+                if (rounding === 'round') {
+                    finalScore = Math.round(nilaiBaru);
+                } else if (rounding === 'ceil') {
+                    finalScore = Math.ceil(nilaiBaru);
+                } else if (rounding === 'floor') {
+                    finalScore = Math.floor(nilaiBaru);
+                } else if (rounding === 'decimal') {
+                    finalScore = Math.round(nilaiBaru * 10) / 10;
+                }
+
+                totalNilaiBaru += parseFloat(finalScore);
+                
+                studentData.push({
+                    id: siswa.id,
+                    nama: siswa.nama,
+                    nilaiAsli: siswa.nilaiAsli,
+                    nilaiBaru: finalScore,
+                    passed: finalScore >= kkmVisual
+                });
+            });
+
+            // Update Statistics
+            updateDashboardStats(nilaiAsliArray, studentData, meanAsli, maxAsli, minAsli, totalNilaiBaru);
+
+            // Populate table views
+            renderResultsTable();
+
+            // Refresh dynamic chart visualizer
+            buildVisualChart(nilaiAsliArray, studentData.map(s => s.nilaiBaru));
+
+            // Setup Search features
+            document.getElementById('tableSearchContainer').classList.remove('hidden');
+
+            showToast(`Berhasil memproses konversi untuk ${studentData.length} siswa!`, "success");
+        }
+
+        // Dynamic statistics updater
+        function updateDashboardStats(asliArr, dataBaru, meanOld, maxOld, minOld, totalNew) {
+            document.getElementById('statsPlaceholder').classList.add('hidden');
+            document.getElementById('statsWidget').classList.remove('hidden');
+
+            const newScores = dataBaru.map(s => s.nilaiBaru);
+            const meanNew = totalNew / dataBaru.length;
+            const maxNew = Math.max(...newScores);
+            const minNew = Math.min(...newScores);
+
+            const passedCount = dataBaru.filter(s => s.passed).length;
+            const passRate = ((passedCount / dataBaru.length) * 100).toFixed(0);
+
+            // Display values
+            document.getElementById('statMean').innerText = meanNew.toFixed(1);
+            document.getElementById('statMeanOld').innerText = meanOld.toFixed(1);
+
+            document.getElementById('statMax').innerText = maxNew;
+            document.getElementById('statMaxOld').innerText = maxOld;
+
+            document.getElementById('statMin').innerText = minNew;
+            document.getElementById('statMinOld').innerText = minOld;
+
+            document.getElementById('statPassRate').innerText = `${passRate}%`;
+
+            // Adjust color profile of Pass rate card
+            const passCard = document.getElementById('passingCard');
+            if (passRate >= 75) {
+                passCard.className = "bg-emerald-50 p-3.5 rounded-xl border border-emerald-100 text-center flex flex-col justify-between";
+            } else if (passRate >= 50) {
+                passCard.className = "bg-amber-50 p-3.5 rounded-xl border border-amber-100 text-center flex flex-col justify-between";
+            } else {
+                passCard.className = "bg-rose-50 p-3.5 rounded-xl border border-rose-100 text-center flex flex-col justify-between";
+            }
+        }
+
+        // Draw and update results table
+        function renderResultsTable() {
+            const body = document.getElementById('resultBody');
+            body.innerHTML = '';
+
+            studentData.forEach((siswa, index) => {
+                const badgeClass = siswa.passed 
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                    : 'bg-rose-50 text-rose-700 border border-rose-100';
+                
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/70 transition duration-100";
+                tr.innerHTML = `
+                    <td class="p-3 text-center font-semibold text-slate-400 text-xs">${index + 1}</td>
+                    <td class="p-3 font-semibold text-slate-800">${siswa.nama}</td>
+                    <td class="p-3 text-center text-slate-500 no-print font-mono">${siswa.nilaiAsli}</td>
+                    <td class="p-3 text-center text-slate-500 hidden print:table-cell font-mono">${siswa.nilaiAsli}</td>
+                    <td class="p-3 text-center font-bold bg-blue-50/40 text-blue-700 text-base font-mono">${siswa.nilaiBaru}</td>
+                    <td class="p-3 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}">
+                            ${siswa.passed ? 'Tuntas' : 'Remidi'}
+                        </span>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        // Live visual chart comparing old distribution curve vs new distribution curve
+        function buildVisualChart(oldData, newData) {
+            document.getElementById('chartContainer').classList.remove('hidden');
+            const ctx = document.getElementById('distributionChart').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // Create distribution groups for accurate curve representation
+            const sortedOld = [...oldData].sort((a,b) => a-b);
+            const sortedNew = [...newData].sort((a,b) => a-b);
+            
+            const labels = studentData.map(s => s.nama);
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Nilai Sebelum Katrol',
+                            data: oldData,
+                            borderColor: '#94a3b8',
+                            backgroundColor: 'rgba(148, 163, 184, 0.05)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            fill: true
+                        },
+                        {
+                            label: 'Nilai Sesudah Katrol',
+                            data: newData,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            pointRadius: 4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'Plus Jakarta Sans',
+                                    size: 10,
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: {
+                                color: '#f1f5f9'
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 10
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                display: false // Clean up dense labels on x axis
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Live filtration search for results table
+        function filterResultTable() {
+            const query = document.getElementById('tableSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#resultBody tr');
+            
+            rows.forEach(row => {
+                const name = row.children[1].innerText.toLowerCase();
+                if (name.includes(query)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
+        // Interactive Column sorting inside table layout
+        function sortResultTable(colIndex) {
+            if (studentData.length === 0) return;
+
+            const iconAsli = document.getElementById('sortAsliIcon');
+            const iconBaru = document.getElementById('sortBaruIcon');
+            
+            iconAsli.innerText = '';
+            iconBaru.innerText = '';
+
+            if (currentSortColumn === colIndex) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = colIndex;
+                currentSortDirection = 'desc'; // default high to low
+            }
+
+            const multiplier = currentSortDirection === 'asc' ? 1 : -1;
+
+            studentData.sort((a, b) => {
+                const valA = colIndex === 2 ? a.nilaiAsli : a.nilaiBaru;
+                const valB = colIndex === 2 ? b.nilaiAsli : b.nilaiBaru;
+                return (valA - valB) * multiplier;
+            });
+
+            // Update UI icons
+            const arrowSymbol = currentSortDirection === 'asc' ? ' 🔼' : ' 🔽';
+            if (colIndex === 2) iconAsli.innerText = arrowSymbol;
+            if (colIndex === 3) iconBaru.innerText = arrowSymbol;
+
+            renderResultsTable();
+        }
+
+        // Fast clean data export layout as direct browser download (CSV format)
+        function exportToExcel() {
+            if (studentData.length === 0) {
+                showToast("Belum ada data hasil konversi untuk di-export!", "warning");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "No,Nama Siswa,Nilai Asli,Nilai Baru,Status Kelulusan\n";
+
+            studentData.forEach((siswa, index) => {
+                const status = siswa.passed ? "Tuntas" : "Remidi";
+                // Escape commas in student names to keep csv clean
+                const safeName = siswa.nama.replace(/"/g, '""');
+                csvContent += `${index + 1},"${safeName}",${siswa.nilaiAsli},${siswa.nilaiBaru},${status}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Konversi_Nilai_SDN_Margaasih_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast("Berkas CSV berhasil di-unduh!", "success");
+        }
+    </script>
+</body>
+</html>
